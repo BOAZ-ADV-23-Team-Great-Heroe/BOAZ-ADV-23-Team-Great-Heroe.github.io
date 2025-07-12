@@ -23,9 +23,9 @@
     }
   </style>
 </head>
-<body id="body" class="min-h-screen flex flex-col justify-between items-center p-6 transition-all">
+<body id="body" class="min-h-screen flex items-center justify-center bg-white transition-all">
 
-  <main class="text-center space-y-6">
+  <main class="flex flex-col items-center justify-center text-center space-y-6">
     <h1 id="title" class="text-3xl sm:text-5xl font-bold drop-shadow-lg">
       Should I Buy 
       <span class="slide-container">
@@ -40,10 +40,22 @@
     </h1>
 
     <div class="flex flex-wrap justify-center gap-4">
-      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="0" style="background-color:#76B900;color:white">NVDA</button>
-      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="1" style="background-color:#0078D4;color:white">MSFT</button>
-      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="2" style="background-color:#E31937;color:white">TSLA</button>
-      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="3" style="background-color:#A2AAAD;color:black">AAPL</button>
+      <button class="ticker-btn px-4 py-2 rounded font-semibold border transition" data-index="0"
+        style="--color:#76B900; color:#76B900; border-color:#76B900;">
+        NVDA
+      </button>
+      <button class="ticker-btn px-4 py-2 rounded font-semibold border transition" data-index="1"
+        style="--color:#0078D4; color:#0078D4; border-color:#0078D4;">
+        MSFT
+      </button>
+      <button class="ticker-btn px-4 py-2 rounded font-semibold border transition" data-index="2"
+        style="--color:#E31937; color:#E31937; border-color:#E31937;">
+        TSLA
+      </button>
+      <button class="ticker-btn px-4 py-2 rounded font-semibold border transition" data-index="3"
+        style="--color:#A2AAAD; color:#A2AAAD; border-color:#A2AAAD;">
+        AAPL
+      </button>
     </div>
 
     <button 
@@ -56,7 +68,7 @@
     <p id="result" class="text-xl sm:text-2xl font-medium mt-2"></p>
   </main>
 
-  <footer class="text-sm text-gray-500 mt-10 text-center">
+  <footer class="text-sm text-gray-500 mt-10 text-center absolute bottom-4">
     © 2025 — MIT License
   </footer>
 
@@ -70,6 +82,7 @@
 
     let index = 0;
     let locked = false;
+    let intervalId;
 
     const slideEl = document.getElementById("ticker-slide");
     const bodyEl = document.getElementById("body");
@@ -83,23 +96,37 @@
       titleEl.style.color = color;
     }
 
-    function autoRotate() {
-      if (!locked) {
-        applyTheme(index);
-        index = (index + 1) % tickers.length;
-      }
+    function startSlideLoop() {
+      intervalId = setInterval(() => {
+        if (!locked) {
+          applyTheme(index);
+          index = (index + 1) % tickers.length;
+        }
+      }, 2000);
     }
 
     // 초기화
     applyTheme(index);
-    setInterval(autoRotate, 2000);
+    startSlideLoop();
 
     // 버튼 클릭 시 고정
     buttons.forEach(btn => {
+      const i = Number(btn.dataset.index);
       btn.addEventListener("click", () => {
         locked = true;
-        index = Number(btn.dataset.index);
+        index = i;
         applyTheme(index);
+        clearInterval(intervalId); // 슬라이딩 즉시 중단
+      });
+
+      // 호버 색상 적용
+      btn.addEventListener("mouseenter", () => {
+        btn.style.backgroundColor = getComputedStyle(btn).getPropertyValue("--color");
+        btn.style.color = tickers[i].text;
+      });
+      btn.addEventListener("mouseleave", () => {
+        btn.style.backgroundColor = "white";
+        btn.style.color = getComputedStyle(btn).getPropertyValue("--color");
       });
     });
 
