@@ -6,8 +6,20 @@
   <title>Should I Buy Today?</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .transition-all {
-      transition: background-color 0.5s, color 0.5s;
+    .slide-container {
+      height: 2.5rem;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: bottom;
+    }
+    .slide-text {
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.6s ease-in-out;
+    }
+    .slide-item {
+      height: 2.5rem;
+      text-align: center;
     }
   </style>
 </head>
@@ -15,7 +27,16 @@
 
   <div class="text-center space-y-6">
     <h1 id="title" class="text-4xl font-bold drop-shadow-lg">
-      Should I Buy <span id="ticker" class="underline">NVDA</span> Today?
+      Should I Buy 
+      <span class="slide-container">
+        <span id="ticker-slide" class="slide-text">
+          <span class="slide-item">NVDA</span>
+          <span class="slide-item">MSFT</span>
+          <span class="slide-item">TSLA</span>
+          <span class="slide-item">AAPL</span>
+        </span>
+      </span> 
+      Today?
     </h1>
 
     <button 
@@ -30,32 +51,34 @@
 
   <script>
     const tickers = [
-      { symbol: "NVDA", color: "#76B900" },  // Nvidia green
-      { symbol: "MSFT", color: "#0078D4" },  // Microsoft blue
-      { symbol: "TSLA", color: "#E31937" },  // Tesla red
-      { symbol: "AAPL", color: "#A2AAAD" }   // Apple silver/gray
+      { symbol: "NVDA", color: "#76B900" },
+      { symbol: "MSFT", color: "#0078D4" },
+      { symbol: "TSLA", color: "#E31937" },
+      { symbol: "AAPL", color: "#A2AAAD" }
     ];
 
     let index = 0;
-    const tickerEl = document.getElementById("ticker");
-    const titleEl = document.getElementById("title");
+    const slideEl = document.getElementById("ticker-slide");
     const bodyEl = document.getElementById("body");
+    const titleEl = document.getElementById("title");
 
-    function updateTicker() {
-      const { symbol, color } = tickers[index];
-      tickerEl.textContent = symbol;
-      bodyEl.style.backgroundColor = color + "22";  // soft background
+    function updateSlide() {
+      const { color } = tickers[index];
+      const offset = -2.5 * index; // rem 기준 슬라이드 위치 조정
+      slideEl.style.transform = `translateY(${offset}rem)`;
+      bodyEl.style.backgroundColor = color + "22";
       titleEl.style.color = color;
+
       index = (index + 1) % tickers.length;
     }
 
-    setInterval(updateTicker, 2000);  // update every 2 seconds
-    updateTicker(); // initial call
+    setInterval(updateSlide, 2000);
+    updateSlide();
 
-    // API 통신 로직
+    // API 통신
     document.getElementById("fetchBtn").addEventListener("click", async () => {
       const resultEl = document.getElementById("result");
-      const currentSymbol = tickerEl.textContent;
+      const currentSymbol = tickers[(index + tickers.length - 1) % tickers.length].symbol;
       resultEl.textContent = "Loading...";
 
       try {
