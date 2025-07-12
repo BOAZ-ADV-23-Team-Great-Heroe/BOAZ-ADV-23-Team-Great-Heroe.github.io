@@ -23,10 +23,10 @@
     }
   </style>
 </head>
-<body id="body" class="min-h-screen flex items-center justify-center transition-all">
+<body id="body" class="min-h-screen flex flex-col justify-between items-center p-6 transition-all">
 
-  <div class="text-center space-y-6">
-    <h1 id="title" class="text-4xl font-bold drop-shadow-lg">
+  <main class="text-center space-y-6">
+    <h1 id="title" class="text-3xl sm:text-5xl font-bold drop-shadow-lg">
       Should I Buy 
       <span class="slide-container">
         <span id="ticker-slide" class="slide-text">
@@ -35,9 +35,16 @@
           <span class="slide-item">TSLA</span>
           <span class="slide-item">AAPL</span>
         </span>
-      </span> 
+      </span>
       Today?
     </h1>
+
+    <div class="flex flex-wrap justify-center gap-4">
+      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="0" style="background-color:#76B900;color:white">NVDA</button>
+      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="1" style="background-color:#0078D4;color:white">MSFT</button>
+      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="2" style="background-color:#E31937;color:white">TSLA</button>
+      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="3" style="background-color:#A2AAAD;color:black">AAPL</button>
+    </div>
 
     <button 
       id="fetchBtn"
@@ -46,39 +53,60 @@
       Get Recommendation
     </button>
 
-    <p id="result" class="text-2xl font-medium mt-4"></p>
-  </div>
+    <p id="result" class="text-xl sm:text-2xl font-medium mt-2"></p>
+  </main>
+
+  <footer class="text-sm text-gray-500 mt-10 text-center">
+    © 2025 — MIT License
+  </footer>
 
   <script>
     const tickers = [
-      { symbol: "NVDA", color: "#76B900" },
-      { symbol: "MSFT", color: "#0078D4" },
-      { symbol: "TSLA", color: "#E31937" },
-      { symbol: "AAPL", color: "#A2AAAD" }
+      { symbol: "NVDA", color: "#76B900", text: "white" },
+      { symbol: "MSFT", color: "#0078D4", text: "white" },
+      { symbol: "TSLA", color: "#E31937", text: "white" },
+      { symbol: "AAPL", color: "#A2AAAD", text: "black" }
     ];
 
     let index = 0;
+    let locked = false;
+
     const slideEl = document.getElementById("ticker-slide");
     const bodyEl = document.getElementById("body");
     const titleEl = document.getElementById("title");
+    const buttons = document.querySelectorAll(".ticker-btn");
 
-    function updateSlide() {
-      const { color } = tickers[index];
-      const offset = -2.5 * index; // rem 기준 슬라이드 위치 조정
-      slideEl.style.transform = `translateY(${offset}rem)`;
+    function applyTheme(i) {
+      const { color } = tickers[i];
+      slideEl.style.transform = `translateY(${-2.5 * i}rem)`;
       bodyEl.style.backgroundColor = color + "22";
       titleEl.style.color = color;
-
-      index = (index + 1) % tickers.length;
     }
 
-    setInterval(updateSlide, 2000);
-    updateSlide();
+    function autoRotate() {
+      if (!locked) {
+        applyTheme(index);
+        index = (index + 1) % tickers.length;
+      }
+    }
+
+    // 초기화
+    applyTheme(index);
+    setInterval(autoRotate, 2000);
+
+    // 버튼 클릭 시 고정
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        locked = true;
+        index = Number(btn.dataset.index);
+        applyTheme(index);
+      });
+    });
 
     // API 통신
     document.getElementById("fetchBtn").addEventListener("click", async () => {
       const resultEl = document.getElementById("result");
-      const currentSymbol = tickers[(index + tickers.length - 1) % tickers.length].symbol;
+      const currentSymbol = tickers[index].symbol;
       resultEl.textContent = "Loading...";
 
       try {
