@@ -6,25 +6,37 @@
   <title>Should I Buy Today?</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* 높이를 font-size에 맞춰 자동 조정하고, 베이스라인 정렬 */
+    /* 슬라이드 컨테이너: 높이를 1em으로 고정, 밑줄은 ::before 로 그리기 */
     .slide-container {
+      position: relative;
+      display: inline-block;
       height: 1em;
       overflow: hidden;
-      display: inline-block;
-      vertical-align: baseline;
+      vertical-align: middle;
     }
+    .slide-container::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-bottom: 2px solid currentColor; /* 현재 텍스트 색과 동일 */
+    }
+
+    /* 실제 움직이는 텍스트 */
     .slide-text {
       display: flex;
       flex-direction: column;
       transition: transform 0.6s ease-in-out;
+      line-height: 1em;
     }
     .slide-item {
       height: 1em;
       display: flex;
       align-items: center;
       justify-content: center;
-      /* 밑줄 추가 */
-      text-decoration: underline;
+      /* underline 제거 */
+      text-decoration: none;
     }
 
     /* 버튼 기본/호버/액티브 스타일 */
@@ -67,7 +79,6 @@
       <button class="ticker-btn" data-index="0" style="--color:#76B900">NVDA</button>
       <button class="ticker-btn" data-index="1" style="--color:#0078D4">MSFT</button>
       <button class="ticker-btn" data-index="2" style="--color:#E31937">TSLA</button>
-      <!-- AAPL 버튼에서도 color:gray 제거 -->
       <button class="ticker-btn" data-index="3" style="--color:#A2AAAD">AAPL</button>
     </div>
 
@@ -104,8 +115,7 @@
 
     function applyTheme(i) {
       const { color } = tickers[i];
-      // translateY 단위를 em으로 변경
-      slideEl.style.transform = `translateY(${-i}em)`;
+      slideEl.style.transform = `translateY(${-i}em)`;  // em 단위로 정확히 슬라이드
       bodyEl.style.backgroundColor = color + "22";
       titleEl.style.color = color;
       buttons.forEach(btn => btn.classList.remove("active"));
@@ -138,11 +148,11 @@
     // API 통신
     document.getElementById("fetchBtn").addEventListener("click", async () => {
       const resultEl = document.getElementById("result");
-      const currentSymbol = tickers[index].symbol;
+      const current = tickers[index].symbol.toLowerCase();
       resultEl.textContent = "Loading...";
 
       try {
-        const res = await fetch(`https://your-gcp-api.com/${currentSymbol.toLowerCase()}`);
+        const res  = await fetch(`https://your-gcp-api.com/${current}`);
         const data = await res.json();
         resultEl.textContent = data.recommendation || "No recommendation.";
       } catch (e) {
@@ -151,6 +161,5 @@
       }
     });
   </script>
-
 </body>
 </html>
