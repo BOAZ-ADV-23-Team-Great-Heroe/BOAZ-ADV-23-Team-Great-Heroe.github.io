@@ -10,7 +10,7 @@
       height: 2.5rem;
       overflow: hidden;
       display: inline-block;
-      vertical-align: bottom;
+      vertical-align: middle;
     }
     .slide-text {
       display: flex;
@@ -19,13 +19,31 @@
     }
     .slide-item {
       height: 2.5rem;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 버튼 기본/호버/액티브 스타일 */
+    .ticker-btn {
+      background-color: white;
+      color: black;
+      border: none;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .ticker-btn:hover {
+      background-color: var(--color);
+      color: white;
+    }
+    .ticker-btn.active {
+      background-color: var(--color);
+      color: white;
     }
   </style>
 </head>
-<body id="body" class="min-h-screen flex items-center justify-center bg-white transition-all">
+<body id="body" class="min-h-screen flex items-center justify-center transition-all">
 
-  <main class="flex flex-col items-center justify-center text-center space-y-6">
+  <main class="flex flex-col items-center justify-center text-center space-y-6 px-4">
     <h1 id="title" class="text-3xl sm:text-5xl font-bold drop-shadow-lg">
       Should I Buy 
       <span class="slide-container">
@@ -40,22 +58,10 @@
     </h1>
 
     <div class="flex flex-wrap justify-center gap-4">
-      <button class="ticker-btn px-4 py-2 rounded font-semibold border transition" data-index="0"
-        style="--color:#76B900; color:#76B900; border-color:#76B900;">
-        NVDA
-      </button>
-      <button class="ticker-btn px-4 py-2 rounded font-semibold border transition" data-index="1"
-        style="--color:#0078D4; color:#0078D4; border-color:#0078D4;">
-        MSFT
-      </button>
-      <button class="ticker-btn px-4 py-2 rounded font-semibold border transition" data-index="2"
-        style="--color:#E31937; color:#E31937; border-color:#E31937;">
-        TSLA
-      </button>
-      <button class="ticker-btn px-4 py-2 rounded font-semibold border transition" data-index="3"
-        style="--color:#A2AAAD; color:#A2AAAD; border-color:#A2AAAD;">
-        AAPL
-      </button>
+      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="0" style="--color:#76B900">NVDA</button>
+      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="1" style="--color:#0078D4">MSFT</button>
+      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="2" style="--color:#E31937">TSLA</button>
+      <button class="ticker-btn px-4 py-2 rounded font-semibold" data-index="3" style="--color:#A2AAAD; color:gray">AAPL</button>
     </div>
 
     <button 
@@ -68,16 +74,16 @@
     <p id="result" class="text-xl sm:text-2xl font-medium mt-2"></p>
   </main>
 
-  <footer class="text-sm text-gray-500 mt-10 text-center absolute bottom-4">
+  <footer class="text-sm text-gray-500 mt-10 text-center absolute bottom-4 w-full">
     © 2025 — MIT License
   </footer>
 
   <script>
     const tickers = [
-      { symbol: "NVDA", color: "#76B900", text: "white" },
-      { symbol: "MSFT", color: "#0078D4", text: "white" },
-      { symbol: "TSLA", color: "#E31937", text: "white" },
-      { symbol: "AAPL", color: "#A2AAAD", text: "black" }
+      { symbol: "NVDA", color: "#76B900" },
+      { symbol: "MSFT", color: "#0078D4" },
+      { symbol: "TSLA", color: "#E31937" },
+      { symbol: "AAPL", color: "#A2AAAD" }
     ];
 
     let index = 0;
@@ -85,7 +91,7 @@
     let intervalId;
 
     const slideEl = document.getElementById("ticker-slide");
-    const bodyEl = document.getElementById("body");
+    const bodyEl  = document.getElementById("body");
     const titleEl = document.getElementById("title");
     const buttons = document.querySelectorAll(".ticker-btn");
 
@@ -94,6 +100,9 @@
       slideEl.style.transform = `translateY(${-2.5 * i}rem)`;
       bodyEl.style.backgroundColor = color + "22";
       titleEl.style.color = color;
+      // 버튼 액티브 상태 갱신
+      buttons.forEach(btn => btn.classList.remove("active"));
+      buttons[i].classList.add("active");
     }
 
     function startSlideLoop() {
@@ -105,28 +114,17 @@
       }, 2000);
     }
 
-    // 초기화
-    applyTheme(index);
+    // 초기 슬라이드 시작
+    applyTheme(0);
     startSlideLoop();
 
-    // 버튼 클릭 시 고정
+    // 버튼 클릭: 고정 & 즉시 슬라이드 중단
     buttons.forEach(btn => {
-      const i = Number(btn.dataset.index);
       btn.addEventListener("click", () => {
         locked = true;
-        index = i;
+        clearInterval(intervalId);
+        index = Number(btn.dataset.index);
         applyTheme(index);
-        clearInterval(intervalId); // 슬라이딩 즉시 중단
-      });
-
-      // 호버 색상 적용
-      btn.addEventListener("mouseenter", () => {
-        btn.style.backgroundColor = getComputedStyle(btn).getPropertyValue("--color");
-        btn.style.color = tickers[i].text;
-      });
-      btn.addEventListener("mouseleave", () => {
-        btn.style.backgroundColor = "white";
-        btn.style.color = getComputedStyle(btn).getPropertyValue("--color");
       });
     });
 
@@ -137,9 +135,9 @@
       resultEl.textContent = "Loading...";
 
       try {
-        const response = await fetch(`https://your-gcp-api.com/${currentSymbol.toLowerCase()}`);
-        const data = await response.json();
-        resultEl.textContent = data.recommendation || "No recommendation received.";
+        const res = await fetch(`https://your-gcp-api.com/${currentSymbol.toLowerCase()}`);
+        const data = await res.json();
+        resultEl.textContent = data.recommendation || "No recommendation.";
       } catch (e) {
         resultEl.textContent = "Error fetching data.";
         console.error(e);
