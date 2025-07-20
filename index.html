@@ -62,7 +62,7 @@
     @keyframes bounce { to { transform: translateY(-0.5rem) } }
   </style>
 </head>
-<body id="body" class="min-h-screen flex items-center justify-center transition-all">
+<body class="min-h-screen flex flex-col">
 
   <!-- PIN 입력 모달 -->
   <div id="pin-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
@@ -82,10 +82,11 @@
     </div>
   </div>
 
-  <!-- 인터랙션 차단 레이어 -->
-  <div id="blocker" class="fixed inset-0 bg-transparent z-40 hidden"></div>
+  <!-- 인터랙션 차단 & 배경 어둡게 -->
+  <div id="blocker" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
 
-  <main class="relative z-10 flex flex-col items-center justify-center text-center space-y-6 px-4 w-full max-w-3xl">
+  <main id="app" class="relative z-10 flex-1 flex flex-col items-center justify-start text-center space-y-6 px-4 py-8 w-full max-w-3xl mx-auto overflow-auto">
+    <!-- 타이틀 & 슬라이드 -->
     <h1 id="title" class="text-3xl sm:text-5xl font-bold drop-shadow-lg">
       Should I Buy 
       <span class="slide-container">
@@ -99,6 +100,7 @@
       Today?
     </h1>
 
+    <!-- 토글 버튼 -->
     <div class="flex flex-wrap justify-center gap-4">
       <button class="ticker-btn" data-index="0" style="--color:#76B900">NVDA</button>
       <button class="ticker-btn" data-index="1" style="--color:#0078D4">MSFT</button>
@@ -106,14 +108,13 @@
       <button class="ticker-btn" data-index="3" style="--color:#A2AAAD">AAPL</button>
     </div>
 
-    <button 
-      id="fetchBtn"
-      class="px-6 py-3 bg-white hover:bg-gray-100 text-black font-semibold rounded-lg shadow-md transition"
-    >
+    <!-- 리포트 버튼 -->
+    <button id="fetchBtn"
+            class="px-6 py-3 bg-white hover:bg-gray-100 text-black font-semibold rounded-lg shadow-md transition">
       Get AI Report
     </button>
 
-    <!-- 로딩 애니메이션 (fixed) -->
+    <!-- 로딩 애니메이션 -->
     <div id="loader"
          class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center space-x-2 text-blue-500 z-50 hidden">
       <div class="dot"></div>
@@ -121,16 +122,17 @@
       <div class="dot"></div>
     </div>
 
-    <!-- 결과 표시 -->
-    <div id="result" class="text-left w-full mt-4 space-y-6"></div>
+    <!-- 결과 표시 영역 -->
+    <div id="result" class="w-full space-y-6"></div>
   </main>
 
-  <footer class="text-sm text-gray-500 mt-10 text-center absolute bottom-4 w-full">
+  <!-- 푸터 (항상 콘텐츠 아래) -->
+  <footer class="text-center text-sm text-gray-500 py-4">
     © 2025 — MIT License
   </footer>
 
   <script>
-    const CORRECT_PIN = "1234";  // ← 원하는 PIN으로 변경
+    const CORRECT_PIN = "1234";
     const tickers = [
       { symbol: "NVDA", color: "#76B900" },
       { symbol: "MSFT", color: "#0078D4" },
@@ -139,49 +141,50 @@
     ];
     let index = 0, locked = false, intervalId;
 
-    const slideEl  = document.getElementById("ticker-slide");
-    const bodyEl   = document.getElementById("body");
-    const titleEl  = document.getElementById("title");
-    const buttons  = document.querySelectorAll(".ticker-btn");
-    const fetchBtn = document.getElementById("fetchBtn");
-    const pinModal = document.getElementById("pin-modal");
-    const pinInput = document.getElementById("pin-input");
-    const pinConfirm = document.getElementById("pin-confirm");
-    const pinError = document.getElementById("pin-error");
-    const blocker  = document.getElementById("blocker");
-    const loader   = document.getElementById("loader");
-    const resultEl = document.getElementById("result");
+    // 엘리먼트 캐시
+    const slideEl   = document.getElementById("ticker-slide");
+    const bodyEl    = document.body;
+    const titleEl   = document.getElementById("title");
+    const buttons   = document.querySelectorAll(".ticker-btn");
+    const fetchBtn  = document.getElementById("fetchBtn");
+    const pinModal  = document.getElementById("pin-modal");
+    const pinInput  = document.getElementById("pin-input");
+    const pinConfirm= document.getElementById("pin-confirm");
+    const pinError  = document.getElementById("pin-error");
+    const blocker   = document.getElementById("blocker");
+    const loader    = document.getElementById("loader");
+    const resultEl  = document.getElementById("result");
 
+    // 테마 슬라이드
     function applyTheme(i) {
       const { color } = tickers[i];
-      slideEl.style.transform        = `translateY(${-i}em)`;
-      bodyEl.style.backgroundColor   = color + "22";
-      titleEl.style.color            = color;
-      buttons.forEach(btn => btn.classList.remove("active"));
+      slideEl.style.transform      = `translateY(${-i}em)`;
+      bodyEl.style.backgroundColor = color + "22";
+      titleEl.style.color          = color;
+      buttons.forEach(b=>b.classList.remove("active"));
       buttons[i].classList.add("active");
     }
     function startSlideLoop() {
-      intervalId = setInterval(() => {
-        if (!locked) {
+      intervalId = setInterval(()=>{
+        if(!locked) {
           applyTheme(index);
-          index = (index + 1) % tickers.length;
+          index = (index+1)%tickers.length;
         }
-      }, 2000);
+      },2000);
     }
     applyTheme(0);
     startSlideLoop();
-    buttons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        locked = true;
-        clearInterval(intervalId);
-        index = Number(btn.dataset.index);
+    buttons.forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        locked = true; clearInterval(intervalId);
+        index = +btn.dataset.index;
         applyTheme(index);
       });
     });
 
-    // Fetch 시작 함수
+    // 실제 fetch 수행
     async function startFetch() {
-      // 인터랙션 차단 + 로더
+      // 인터랙션 차단 + 로딩 표시
       blocker.classList.remove("hidden");
       loader.classList.remove("hidden");
       resultEl.innerHTML = "";
@@ -193,7 +196,7 @@
         const res   = await fetch(url);
         const data  = await res.json();
 
-        // 결과 렌더
+        // 각 섹션 박스 렌더링
         const dateKey  = Object.keys(data)[0];
         const r        = data[dateKey];
         const qa       = r.foundational_analysis.quantitative;
@@ -203,16 +206,21 @@
         const plan     = r.final_actionable_plan;
 
         resultEl.innerHTML = `
-          <h2 class="text-5xl font-extrabold text-blue-600 mb-4">
-            Decision: ${plan.investment_decision.toUpperCase()}
-          </h2>
+          <!-- Decision 강조 -->
+          <div class="p-6 bg-blue-50 border-l-4 border-blue-600 rounded shadow">
+            <h2 class="text-4xl font-extrabold text-blue-800">
+              Decision: ${plan.investment_decision.toUpperCase()}
+            </h2>
+            <p class="mt-2 text-blue-700">${plan.primary_reason}</p>
+          </div>
 
-          <section>
-            <h3 class="text-2xl font-semibold">Foundational Analysis</h3>
-            <div class="grid grid-cols-2 gap-4 mt-2">
+          <!-- Foundational Analysis -->
+          <div class="p-4 bg-white rounded-lg shadow">
+            <h3 class="text-2xl font-semibold mb-2">Foundational Analysis</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h4 class="font-medium">Quantitative</h4>
-                <ul class="list-disc list-inside">
+                <ul class="list-disc list-inside mt-1 space-y-1">
                   <li>3‑year CAGR: ${qa.three_year_cagr ?? "N/A"}</li>
                   <li>P/E Ratio: ${qa.pe_ratio ?? "N/A"}</li>
                   <li>P/S Ratio: ${qa.ps_ratio ?? "N/A"}</li>
@@ -222,66 +230,71 @@
               </div>
               <div>
                 <h4 class="font-medium">Qualitative</h4>
-                <p class="mt-1"><strong>Competitive Moat:</strong> ${ql.competitive_moat}</p>
-                <p class="mt-2"><strong>Short‑term Catalysts:</strong></p>
-                <ul class="list-disc list-inside">
+                <p class="mt-1"><strong>Moat:</strong> ${ql.competitive_moat}</p>
+                <p class="mt-2"><strong>Catalysts:</strong></p>
+                <ul class="list-disc list-inside space-y-1">
                   ${ql.short_term_catalysts.map(i=>`<li>${i}</li>`).join("")}
                 </ul>
-                <p class="mt-2"><strong>Short‑term Headwinds:</strong></p>
-                <ul class="list-disc list-inside">
+                <p class="mt-2"><strong>Headwinds:</strong></p>
+                <ul class="list-disc list-inside space-y-1">
                   ${ql.short_term_headwinds.map(i=>`<li>${i}</li>`).join("")}
                 </ul>
               </div>
             </div>
-          </section>
+          </div>
 
-          <section>
-            <h3 class="text-2xl font-semibold mt-6">Persona Analysis</h3>
-            ${Object.entries(personas).map(([name,p])=>`
-              <div class="mt-4 p-4 bg-gray-50 rounded-lg shadow">
-                <h4 class="font-medium">${name}</h4>
-                ${p.intrinsic_value_assessment ? `<p class="mt-2"><strong>Intrinsic Value Assessment:</strong> ${p.intrinsic_value_assessment}</p>` : ""}
-                ${p.is_undervalued!==undefined ? `<p class="mt-2"><strong>Undervalued:</strong> ${p.is_undervalued}</p>` : ""}
-                ${p.long_term_risks ? `
-                  <p class="mt-2"><strong>Long‑term Risks:</strong></p>
-                  <ul class="list-disc list-inside">
-                    ${p.long_term_risks.map(i=>`<li>${i}</li>`).join("")}
-                  </ul>
-                ` : ""}
-                ${p.disruptive_potential ? `<p class="mt-2"><strong>Disruptive Potential:</strong> ${p.disruptive_potential}</p>` : ""}
-                ${p.tam_expansion ? `<p class="mt-2"><strong>TAM Expansion:</strong> ${p.tam_expansion}</p>` : ""}
-                ${p.key_growth_catalysts ? `
-                  <p class="mt-2"><strong>Key Growth Catalysts:</strong></p>
-                  <ul class="list-disc list-inside">
-                    ${p.key_growth_catalysts.map(i=>`<li>${i}</li>`).join("")}
-                  </ul>
-                ` : ""}
-                ${p.market_sentiment ? `<p class="mt-2"><strong>Market Sentiment:</strong> ${p.market_sentiment}</p>` : ""}
-                ${p.key_support_level ? `<p class="mt-1"><strong>Support:</strong> ${p.key_support_level}</p>` : ""}
-                ${p.key_resistance_level ? `<p><strong>Resistance:</strong> ${p.key_resistance_level}</p>` : ""}
-              </div>
-            `).join("")}
-          </section>
+          <!-- Persona Analysis -->
+          <div class="p-4 bg-white rounded-lg shadow">
+            <h3 class="text-2xl font-semibold mb-2">Persona Analysis</h3>
+            <div class="space-y-4">
+              ${Object.entries(personas).map(
+                ([name,p])=>`
+                <div class="border border-gray-200 rounded p-3">
+                  <h4 class="font-medium">${name}</h4>
+                  ${p.intrinsic_value_assessment?`<p class="mt-1">${p.intrinsic_value_assessment}</p>`:""}
+                  ${p.is_undervalued!==undefined?`<p class="mt-1"><strong>Undervalued:</strong> ${p.is_undervalued}</p>`:""}
+                  ${p.long_term_risks?`
+                    <p class="mt-1"><strong>Long‑term Risks:</strong></p>
+                    <ul class="list-disc list-inside space-y-1">
+                      ${p.long_term_risks.map(i=>`<li>${i}</li>`).join("")}
+                    </ul>
+                  `:""}
+                  ${p.disruptive_potential?`<p class="mt-1"><strong>Disruptive Potential:</strong> ${p.disruptive_potential}</p>`:""}
+                  ${p.tam_expansion?`<p class="mt-1"><strong>TAM Expansion:</strong> ${p.tam_expansion}</p>`:""}
+                  ${p.key_growth_catalysts?`
+                    <p class="mt-1"><strong>Growth Catalysts:</strong></p>
+                    <ul class="list-disc list-inside space-y-1">
+                      ${p.key_growth_catalysts.map(i=>`<li>${i}</li>`).join("")}
+                    </ul>
+                  `:""}
+                  ${p.market_sentiment?`<p class="mt-1"><strong>Sentiment:</strong> ${p.market_sentiment}</p>`:""}
+                  ${p.key_support_level?`<p><strong>Support:</strong> ${p.key_support_level}</p>`:""}
+                  ${p.key_resistance_level?`<p><strong>Resistance:</strong> ${p.key_resistance_level}</p>`:""}
+                </div>
+                `).join("")}
+            </div>
+          </div>
 
-          <section>
-            <h3 class="text-2xl font-semibold mt-6">Committee Debate</h3>
-            <p class="mt-2"><strong>Main Contention:</strong> ${cm.main_contention}</p>
-            <p class="mt-2"><strong>Strongest Argument:</strong> ${cm.strongest_argument}</p>
-            <p class="mt-2"><strong>Simulated Q&A:</strong> ${cm.simulated_qa}</p>
-          </section>
+          <!-- Committee Debate -->
+          <div class="p-4 bg-white rounded-lg shadow">
+            <h3 class="text-2xl font-semibold mb-2">Committee Debate</h3>
+            <p class="mt-1"><strong>Contestation:</strong> ${cm.main_contention}</p>
+            <p class="mt-1"><strong>Strongest Arg:</strong> ${cm.strongest_argument}</p>
+            <p class="mt-1"><strong>Q&A:</strong> ${cm.simulated_qa}</p>
+          </div>
 
-          <section>
-            <h3 class="text-2xl font-semibold mt-6">Final Actionable Plan</h3>
-            <ul class="list-disc list-inside mt-2">
-              <li><strong>Reason:</strong> ${plan.primary_reason}</li>
+          <!-- Final Actionable Plan -->
+          <div class="p-4 bg-white rounded-lg shadow mb-8">
+            <h3 class="text-2xl font-semibold mb-2">Final Actionable Plan</h3>
+            <ul class="list-disc list-inside space-y-1">
               <li><strong>Position Sizing:</strong> ${plan.position_sizing}</li>
-              <li><strong>Stop Loss Rule:</strong> ${plan.stop_loss_rule}</li>
-              <li><strong>Time Horizon:</strong> ${plan.time_horizon}</li>
-              <li><strong>Strategy Definition:</strong> ${plan.strategy_definition}</li>
+              <li><strong>Stop Loss:</strong> ${plan.stop_loss_rule}</li>
+              <li><strong>Horizon:</strong> ${plan.time_horizon}</li>
+              <li><strong>Strategy:</strong> ${plan.strategy_definition}</li>
             </ul>
-          </section>
+          </div>
         `;
-      } catch (err) {
+      } catch(err) {
         resultEl.innerHTML = `<p class="text-red-500">Error loading data.</p>`;
         console.error(err);
       } finally {
@@ -290,16 +303,16 @@
       }
     }
 
-    // fetchBtn 클릭 → PIN 모달 열기
-    fetchBtn.addEventListener("click", () => {
+    // 버튼 클릭 → PIN 모달 표시
+    fetchBtn.addEventListener("click", ()=>{
       pinInput.value = "";
       pinError.classList.add("hidden");
       pinModal.classList.remove("hidden");
     });
 
     // PIN 확인
-    pinConfirm.addEventListener("click", () => {
-      if (pinInput.value === CORRECT_PIN) {
+    pinConfirm.addEventListener("click", ()=>{
+      if(pinInput.value === CORRECT_PIN) {
         pinModal.classList.add("hidden");
         startFetch();
       } else {
