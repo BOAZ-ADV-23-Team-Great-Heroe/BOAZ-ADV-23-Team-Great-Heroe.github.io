@@ -62,7 +62,7 @@
     @keyframes bounce { to { transform: translateY(-0.5rem) } }
   </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col justify-between">
 
   <!-- PIN 입력 모달 -->
   <div id="pin-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
@@ -85,7 +85,7 @@
   <!-- 인터랙션 차단 & 배경 어둡게 -->
   <div id="blocker" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
 
-  <main id="app" class="relative z-10 flex-1 flex flex-col items-center justify-start text-center space-y-6 px-4 py-8 w-full max-w-3xl mx-auto overflow-auto">
+  <main id="app" class="relative z-10 flex-1 flex flex-col items-center justify-center text-center space-y-6 px-4 py-8 w-full max-w-3xl mx-auto overflow-auto">
     <!-- 타이틀 & 슬라이드 -->
     <h1 id="title" class="text-3xl sm:text-5xl font-bold drop-shadow-lg">
       Should I Buy 
