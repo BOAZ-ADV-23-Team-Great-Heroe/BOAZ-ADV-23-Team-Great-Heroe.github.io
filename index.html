@@ -6,7 +6,7 @@
   <title>Should I Buy Today?</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* 슬라이드 컨테이너: 높이를 1em으로 고정, 밑줄은 ::before 로 그리기 */
+    /* 슬라이드 텍스트 */
     .slide-container {
       position: relative;
       display: inline-block;
@@ -20,10 +20,8 @@
       left: 0;
       right: 0;
       bottom: 0;
-      border-bottom: 2px solid currentColor; /* 현재 텍스트 색과 동일 */
+      border-bottom: 2px solid currentColor; 
     }
-
-    /* 실제 움직이는 텍스트 */
     .slide-text {
       display: flex;
       flex-direction: column;
@@ -35,11 +33,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      /* underline 제거 */
       text-decoration: none;
     }
 
-    /* 버튼 기본/호버/액티브 스타일 */
+    /* 토글 버튼 */
     .ticker-btn {
       background-color: white;
       color: black;
@@ -57,11 +54,25 @@
       background-color: var(--color);
       color: white;
     }
+
+    /* 로딩용 도트 애니메이션 */
+    .dot {
+      width: 0.75rem;
+      height: 0.75rem;
+      background-color: currentColor;
+      border-radius: 9999px;
+      animation: bounce 0.6s infinite alternate;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s }
+    .dot:nth-child(3) { animation-delay: 0.4s }
+    @keyframes bounce {
+      to { transform: translateY(-0.5rem) }
+    }
   </style>
 </head>
 <body id="body" class="min-h-screen flex items-center justify-center transition-all">
 
-  <main class="flex flex-col items-center justify-center text-center space-y-6 px-4">
+  <main class="flex flex-col items-center justify-center text-center space-y-6 px-4 w-full max-w-3xl">
     <h1 id="title" class="text-3xl sm:text-5xl font-bold drop-shadow-lg">
       Should I Buy 
       <span class="slide-container">
@@ -86,10 +97,18 @@
       id="fetchBtn"
       class="px-6 py-3 bg-white hover:bg-gray-100 text-black font-semibold rounded-lg shadow-md transition"
     >
-      Get Recommendation
+      Get AI Report
     </button>
 
-    <p id="result" class="text-xl sm:text-2xl font-medium mt-2"></p>
+    <!-- 로딩 애니메이션 -->
+    <div id="loader" class="flex items-center justify-center space-x-2 text-blue-500 mt-4 hidden">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+
+    <!-- 결과 표시 -->
+    <div id="result" class="text-left w-full mt-4 space-y-6"></div>
   </main>
 
   <footer class="text-sm text-gray-500 mt-10 text-center absolute bottom-4 w-full">
@@ -97,13 +116,13 @@
   </footer>
 
   <script>
+    const CORRECT_PIN = "1234";  // ← 원하는 PIN으로 변경
     const tickers = [
       { symbol: "NVDA", color: "#76B900" },
       { symbol: "MSFT", color: "#0078D4" },
       { symbol: "TSLA", color: "#E31937" },
       { symbol: "AAPL", color: "#A2AAAD" }
     ];
-
     let index = 0;
     let locked = false;
     let intervalId;
@@ -115,7 +134,7 @@
 
     function applyTheme(i) {
       const { color } = tickers[i];
-      slideEl.style.transform = `translateY(${-i}em)`;  // em 단위로 정확히 슬라이드
+      slideEl.style.transform = `translateY(${-i}em)`;
       bodyEl.style.backgroundColor = color + "22";
       titleEl.style.color = color;
       buttons.forEach(btn => btn.classList.remove("active"));
@@ -131,11 +150,9 @@
       }, 2000);
     }
 
-    // 초기화
     applyTheme(0);
     startSlideLoop();
 
-    // 버튼 클릭: 고정 & 즉시 슬라이드 중단
     buttons.forEach(btn => {
       btn.addEventListener("click", () => {
         locked = true;
@@ -145,19 +162,113 @@
       });
     });
 
-    // API 통신
     document.getElementById("fetchBtn").addEventListener("click", async () => {
+      // PIN 체크
+      const pin = prompt("AI 리포트를 보기 위한 PIN을 입력하세요");
+      if (pin !== CORRECT_PIN) {
+        alert("PIN이 올바르지 않습니다.");
+        return;
+      }
+
       const resultEl = document.getElementById("result");
-      const current = tickers[index].symbol.toLowerCase();
-      resultEl.textContent = "Loading...";
+      const loader   = document.getElementById("loader");
+      resultEl.innerHTML = "";
+      loader.classList.remove("hidden");
 
       try {
-        const res  = await fetch(`https://your-gcp-api.com/${current}`);
-        const data = await res.json();
-        resultEl.textContent = data.recommendation || "No recommendation.";
-      } catch (e) {
-        resultEl.textContent = "Error fetching data.";
-        console.error(e);
+        const sym   = tickers[index].symbol;
+        const today = new Date().toISOString().slice(0, 10);
+        const url   = `https://fastapi-service-bqs7cknjaq-du.a.run.app/api/report?ticker=${sym}&is_today=true&start_date=${today}&end_date=${today}`;
+        const res   = await fetch(url);
+        const data  = await res.json();
+
+        loader.classList.add("hidden");
+
+        const dateKey = Object.keys(data)[0];
+        const r       = data[dateKey];
+        const qa      = r.foundational_analysis.quantitative;
+        const ql      = r.foundational_analysis.qualitative;
+        const personas = r.persona_analyses;
+        const cm      = r.committee_debate;
+        const plan    = r.final_actionable_plan;
+
+        resultEl.innerHTML = `
+          <h2 class="text-2xl font-bold">${dateKey} 분석</h2>
+
+          <section>
+            <h3 class="text-xl font-semibold">■ 기본 분석</h3>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <div>
+                <h4 class="font-medium">정량적</h4>
+                <ul class="list-disc list-inside">
+                  <li>3년 CAGR: ${qa.three_year_cagr ?? "N/A"}</li>
+                  <li>PER: ${qa.pe_ratio ?? "N/A"}</li>
+                  <li>PSR: ${qa.ps_ratio ?? "N/A"}</li>
+                  <li>부채비율: ${qa.debt_to_equity ?? "N/A"}</li>
+                  <li>R&amp;D 투자비율: ${qa.rd_investment_ratio ?? "N/A"}</li>
+                </ul>
+              </div>
+              <div>
+                <h4 class="font-medium">정성적</h4>
+                <p class="mt-1"><strong>Moat:</strong> ${ql.competitive_moat}</p>
+                <p class="mt-2"><strong>단기 촉매:</strong></p>
+                <ul class="list-disc list-inside">
+                  ${ql.short_term_catalysts.map(i => `<li>${i}</li>`).join("")}
+                </ul>
+                <p class="mt-2"><strong>단기 역풍:</strong></p>
+                <ul class="list-disc list-inside">
+                  ${ql.short_term_headwinds.map(i => `<li>${i}</li>`).join("")}
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h3 class="text-xl font-semibold mt-6">■ Persona 분석</h3>
+            ${Object.entries(personas).map(([name, p]) => `
+              <div class="mt-4 p-4 bg-gray-50 rounded-lg shadow">
+                <h4 class="font-medium">${name}</h4>
+                ${p.intrinsic_value_assessment ? `<p class="mt-2">${p.intrinsic_value_assessment}</p>` : ""}
+                ${p.disruptive_potential ? `<p class="mt-2"><strong>Disruptive:</strong> ${p.disruptive_potential}</p>` : ""}
+                ${p.tam_expansion ? `<p class="mt-2"><strong>TAM:</strong> ${p.tam_expansion}</p>` : ""}
+                ${p.key_growth_catalysts ? `<ul class="list-disc list-inside mt-2">${p.key_growth_catalysts.map(i=>`<li>${i}</li>`).join("")}</ul>` : ""}
+                ${p.is_undervalued !== undefined ? `
+                  <p class="mt-2"><strong>Undervalued:</strong> ${p.is_undervalued}</p>
+                  <ul class="list-disc list-inside mt-1">
+                    ${p.long_term_risks.map(i=>`<li>${i}</li>`).join("")}
+                  </ul>
+                ` : ""}
+                ${p.market_sentiment ? `
+                  <p class="mt-2"><strong>Sentiment:</strong> ${p.market_sentiment}</p>
+                  <p class="mt-1">Support: ${p.key_support_level}, Resistance: ${p.key_resistance_level}</p>
+                ` : ""}
+              </div>
+            `).join("")}
+          </section>
+
+          <section>
+            <h3 class="text-xl font-semibold mt-6">■ Committee Debate</h3>
+            <p class="mt-2"><strong>Main Contention:</strong> ${cm.main_contention}</p>
+            <p class="mt-2"><strong>Strongest Arg:</strong> ${cm.strongest_argument}</p>
+            <p class="mt-2"><strong>Simulated Q&A:</strong> ${cm.simulated_qa}</p>
+          </section>
+
+          <section>
+            <h3 class="text-xl font-semibold mt-6">■ 최종 행동 계획</h3>
+            <ul class="list-disc list-inside mt-2">
+              <li><strong>Decision:</strong> ${plan.investment_decision}</li>
+              <li><strong>Reason:</strong> ${plan.primary_reason}</li>
+              <li><strong>Position Sizing:</strong> ${plan.position_sizing}</li>
+              <li><strong>Stop Loss:</strong> ${plan.stop_loss_rule}</li>
+              <li><strong>Horizon:</strong> ${plan.time_horizon}</li>
+              <li><strong>Strategy:</strong> ${plan.strategy_definition}</li>
+            </ul>
+          </section>
+        `;
+      } catch (err) {
+        document.getElementById("loader").classList.add("hidden");
+        document.getElementById("result").innerHTML = `<p class="text-red-500">데이터 로드 중 오류가 발생했습니다.</p>`;
+        console.error(err);
       }
     });
   </script>
