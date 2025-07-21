@@ -1,3 +1,3 @@
 **Should I Buy NVDA Today?**
 
-BOAZ-ADV-23-Team-Great-Heroe.github.io
+[https://boaz-adv-23-team-great-heroe.github.io/](https://boaz-adv-23-team-great-heroe.github.io/)
